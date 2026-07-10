@@ -2,11 +2,13 @@ import os, re
 
 CERT_DIR = "certificates"
 README = "README.md"
+COLS = 3  # certificates per row
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp"}
 
 files = sorted(os.listdir(CERT_DIR))
-lines = []
+cells = []
+
 for f in files:
     if f.startswith("."):
         continue
@@ -16,26 +18,26 @@ for f in files:
     ext = os.path.splitext(f)[1].lower()
 
     if ext in IMAGE_EXTS:
-        # Thumbnail preview, clickable to open full size
-        lines.append(
-            f'<a href="{path}"><img src="{path}" width="200" alt="{name}"/></a><br/><sub>{name}</sub>'
-        )
+        cell = f'<a href="{path}"><img src="{path}" width="180"/></a><br/><sub><b>{name}</b></sub>'
     else:
-        # PDF or anything else -> plain link
-        lines.append(f"- 📄 [{name}]({path})")
+        cell = f'📄<br/><a href="{path}">{name}</a>'
 
-# Wrap image thumbnails in a flex row so they sit side by side
-image_lines = [l for l in lines if l.startswith("<a")]
-other_lines = [l for l in lines if not l.startswith("<a")]
+    cells.append(cell)
 
-block_parts = []
-if image_lines:
-    row = "\n".join(f'<span style="display:inline-block;margin:8px;text-align:center;">{l}</span>' for l in image_lines)
-    block_parts.append(f'<div style="display:flex;flex-wrap:wrap;">{row}</div>')
-if other_lines:
-    block_parts.append("\n".join(other_lines))
+# Build an HTML table, COLS cells per row
+rows = []
+for i in range(0, len(cells), COLS):
+    row_cells = cells[i:i + COLS]
+    # pad the last row so the table stays aligned
+    while len(row_cells) < COLS:
+        row_cells.append("")
+    row_html = "".join(f'<td align="center">{c}</td>' for c in row_cells)
+    rows.append(f"<tr>{row_html}</tr>")
 
-block = "\n\n".join(block_parts) if block_parts else "_No certificates yet._"
+if rows:
+    block = "<table>\n" + "\n".join(rows) + "\n</table>"
+else:
+    block = "_No certificates yet._"
 
 with open(README, "r") as f:
     content = f.read()
